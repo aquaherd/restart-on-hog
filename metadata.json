@@ -1,0 +1,12 @@
+{
+	"shell-version": [
+	"3.10", 
+	"3.12", 
+	"3.14"
+	], 
+	"url": "https://github.com/aquaherd/restart-on-hog", 
+	"uuid": "restart-on-hog@aquaherd.github.com", 
+	"name": "Restart On Hog", 
+	"original-author": "smultimeter@gmail.com", 
+	"description": "Shows gnome-shells resident memory usage and restarts it when a configurable threshold is exceeded."
+}
