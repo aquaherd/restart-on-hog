@@ -6,12 +6,11 @@ const Gio = imports.gi.Gio;
 const GLib = imports.gi.GLib;
 const Mainloop = imports.mainloop;
 
-let text, label, button, pid, timerid;
-
-function _hideHogWatch() {
-    Main.uiGroup.remove_actor(text);
-    text = null;
-}
+let label, button, pid, timerid;
+let maxRes = 1024; // 1 GB Max; make configurable
+let maxVirt = 1024; // 1 GB Max; make configurable
+let showRes = true; // make configurable
+let showVirt = false; // make configurable
 
 function _resetShell() {
     global.reexec_self();
@@ -22,7 +21,7 @@ function _resetShell() {
  */
 function _onCheckMem() {
     if(0 == pid)
-        return;
+        return true;
         
     let stm="/proc/" + pid + "/statm";
     let fcm=GLib.file_get_contents(stm);
@@ -43,49 +42,13 @@ function _onCheckMem() {
 }
 
 /**
- * This is the most convoluted way to get gnome-shell's pid.
+ * This is the second most convoluted way to get gnome-shell's pid.
  * Maybe there is a better way.
  */
 function _setpid() {
-    let file=Gio.file_new_for_path("/proc");
-    file.enumerate_children_async(Gio.FILE_ATTRIBUTE_STANDARD_NAME,
-                                  Gio.FileQueryInfoFlags.NONE,
-                                  GLib.PRIORITY_LOW, null, function (obj, res) {
-        let enumerator = obj.enumerate_children_finish(res);
-        function onNextProcComplete(obj, res) {
-            let files = obj.next_files_finish(res);
-            if (files.length) {
-                for(let fi = 0; fi < files.length; fi++)
-                {
-                    let f=files[fi];
-                    let st="/proc/" + f.get_name() + "/stat";
-                    if (GLib.file_test(st, GLib.FileTest.IS_REGULAR)) {
-                        let fc=GLib.file_get_contents(st);
-                        if(fc[0])
-                        {
-                            let fields=fc[1].toString().split(' ');
-                            if(fields[1] == "(gnome-shell)")
-                            {
-                                // pid has been found
-                                pid = fields[0];
-                                // no need to enumerate further
-                                enumerator.close(null);
-                                enumerator = null;
-                                files=null;
-                                return;
-                            }
-                        }
-                    }
-                }
-                enumerator.next_files_async(100, GLib.PRIORITY_LOW, null, onNextProcComplete);
-            } else {
-                enumerator.close(null);
-                enumerator = null;
-            }
-        }
-        enumerator.next_files_async(100, GLib.PRIORITY_LOW, null, onNextProcComplete);
-    });
-    file.unref();
+	let creds = new Gio.Credentials(); 
+	pid = creds.get_unix_pid();	
+	creds.unref;
 }
 
 function init() {
