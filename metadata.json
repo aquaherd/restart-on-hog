@@ -8,5 +8,6 @@
 	"uuid": "restart-on-hog@aquaherd.github.com", 
 	"name": "Restart On Hog", 
 	"original-author": "smultimeter@gmail.com", 
+	"settings-schema": "org.gnome.shell.extensions.restart-on-hog",
 	"description": "Shows gnome-shells resident memory usage and restarts it when a configurable threshold is exceeded."
 }

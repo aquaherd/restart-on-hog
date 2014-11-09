@@ -5,12 +5,16 @@ const Util = imports.misc.util;
 const Gio = imports.gi.Gio;
 const GLib = imports.gi.GLib;
 const Mainloop = imports.mainloop;
+const ExtensionUtils = imports.misc.extensionUtils;
+const Me = ExtensionUtils.getCurrentExtension();
+const Convenience = Me.imports.convenience;
 
 let label, button, pid, timerid;
-let maxRes = 1024; // 1 GB Max; make configurable
-let maxVirt = 1024; // 1 GB Max; make configurable
-let showRes = true; // make configurable
-let showVirt = false; // make configurable
+let maxRss = 1024; // 1 GB Max; make configurable
+let maxVms = 4096; // 4 GB Max; make configurable
+let showRss = true; // make configurable
+let showVms = false; // make configurable
+let settings = null;
 
 function _resetShell() {
     global.reexec_self();
@@ -28,15 +32,34 @@ function _onCheckMem() {
     if(fcm[0])
     {
         let fields=fcm[1].toString().split(' ');
-        let mb = fields[1];
-        mb *= 4096; // page size in bytes
-        mb /= (1024*1024); // bytes in a Megabyte
         // update display:
-        label.text = '%.1f'.format(mb) + "m";
+        let text = "";
+        if(showRss)
+        {
+			let rss = fields[1];
+			rss *= 4096; // page size in bytes
+			rss /= (1024*1024); // bytes in a Megabyte
+			// memory-overhog
+			if(rss > (maxRss * 1024 * 1024))
+				_resetShell();
+			text += '%.1f'.format(rss) + "m";
+		}
+		if(showRss && showVms)
+			text += " ";
+		if(showVms)
+		{
+			let vms = fields[0];
+			vms *= 4096; 
+			vms /= (1024*1024)
+			// memory-overhog
+			if(rss > (maxRss * 1024 * 1024))
+				_resetShell();
+			text += '%1.1f'.format(vms) + "m";
+        }
         
-        // memory-overhog
-        if(mb > (1024 * 1024 * 1024))
-            _resetShell();
+        // update label, avoid uneccesary refreshes
+        if(label.text != text)
+			label.text = text;
     }
     return true;
 }
@@ -62,6 +85,8 @@ function init() {
     label = new St.Label({ text: "..." });
     button.set_child(label);
     button.connect('button-press-event', _resetShell);
+    
+    settings = Convenience.getSettings();
 }
 
 function enable() {
